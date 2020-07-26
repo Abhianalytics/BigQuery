@@ -1,0 +1,53 @@
+#Learning Review
+#Use Union Wildcards to treat multiple tables as a single group
+#Use _TABLE_SUFFIX to filter wildcard tables and create calculated fields with the table name
+#FULL JOINs (also called FULL OUTER JOINs) include all records from each joined table regardless of whether there are matches on the join key
+#Having non-unique join keys can result in an unintentional CROSS JOIN (more output rows than input rows) which should be avoided
+#Use COUNT() and GROUP BY to determine if a key field is indeed unique
+
+
+#standardSQL
+# UNION Wildcard and returning a table suffix
+# See the use of the _TABLE_SUFFIX 
+# and the use of * wildcard 
+
+SELECT
+  COUNT(*) as number_of_filings,
+  _TABLE_SUFFIX AS year_filed
+FROM `bigquery-public-data.irs_990.irs_990_*`
+GROUP BY year_filed
+ORDER BY year_filed DESC
+
+
+#standardSQL
+# count of filings, revenue, expenses since 2013
+SELECT
+  CONCAT("20",_TABLE_SUFFIX) AS year_filed,
+  COUNT(ein) AS nonprofit_count,
+  AVG(totrevenue) AS avg_revenue,
+  AVG(totfuncexpns) AS avg_expenses
+FROM `bigquery-public-data.irs_990.irs_990_20*`
+WHERE _TABLE_SUFFIX >= '13'
+GROUP BY year_filed
+ORDER BY year_filed DESC
+
+
+
+#standardSQL
+  # Find the Org Names of all EINs for 2015 with some revenue or expenses, limit 100
+SELECT
+  tax.ein AS tax_ein,
+  org.ein AS org_ein,
+  org.name,
+  tax.totrevenue,
+  tax.totfuncexpns
+FROM
+  `bigquery-public-data.irs_990.irs_990_2015` AS tax
+JOIN
+  `bigquery-public-data.irs_990.irs_990_ein` AS org
+ON
+  tax.ein = org.ein
+WHERE
+  tax.totrevenue + tax.totfuncexpns > 0
+LIMIT
+  100;
